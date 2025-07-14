@@ -106,6 +106,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true });
   });
 
+  // OAuth preparation routes (to be implemented with actual OAuth providers)
+  app.get('/api/auth/google', (req, res) => {
+    res.status(501).json({ error: 'OAuth integration coming soon' });
+  });
+
+  app.get('/api/auth/github', (req, res) => {
+    res.status(501).json({ error: 'OAuth integration coming soon' });
+  });
+
+  app.get('/api/auth/twitter', (req, res) => {
+    res.status(501).json({ error: 'OAuth integration coming soon' });
+  });
+
   app.get('/api/auth/me', requireAuth, async (req: any, res) => {
     try {
       const user = await storage.getUserById(req.user.userId);

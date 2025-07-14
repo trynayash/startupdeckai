@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { AuthModal } from "@/components/auth-modal";
+import { EnhancedAuthModal } from "@/components/enhanced-auth-modal";
 import { useToast } from "@/hooks/use-toast";
 import { useUsageTracker } from "@/lib/usageTracker";
 import { BusinessValidation } from "@shared/schema";
@@ -404,7 +404,7 @@ export default function Analyze() {
       </main>
 
       {/* Authentication Modal */}
-      <AuthModal
+      <EnhancedAuthModal
         open={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         onSuccess={handleAuthSuccess}

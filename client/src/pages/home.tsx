@@ -4,7 +4,7 @@ import { Link } from "wouter";
 import { PitchDeckGenerator } from "@/components/pitch-deck-generator";
 import { PitchDeckDisplay } from "@/components/pitch-deck-display";
 import { SettingsModal } from "@/components/settings-modal";
-import { AuthModal } from "@/components/auth-modal";
+import { EnhancedAuthModal } from "@/components/enhanced-auth-modal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -389,7 +389,7 @@ export default function Home() {
       />
 
       {/* Authentication Modal */}
-      <AuthModal
+      <EnhancedAuthModal
         open={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         onSuccess={handleAuthSuccess}
