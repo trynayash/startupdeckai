@@ -18,7 +18,16 @@ Preferred communication style: Simple, everyday language.
 - **SWOT Analysis**: Automated strengths, weaknesses, opportunities, and threats evaluation
 - **Recommendation System**: AI-powered go/wait/pivot recommendations with confidence scoring
 - **Database Integration**: Replaced memory storage with PostgreSQL database for persistent data storage
+- **Freemium Authentication System**: Implemented usage tracking and authentication with tiered access
 - **Midnight Blue Color Palette**: Applied cohesive midnight blue theme (#145da0, #0c2d48, #2e8bc0, #b1d4e0) across entire application
+
+### Authentication & Usage Tracking System
+- **Anonymous Users**: 1 free business validation and pitch deck generation
+- **Free Accounts**: 5 validations and 3 pitch decks per month after sign-up
+- **Usage Tracking**: Browser localStorage for anonymous users, database for authenticated users
+- **Session Management**: Simple session-based authentication with secure tokens
+- **UI Integration**: Authentication modals, usage indicators, and user status in header
+- **Graceful Limits**: Clear messaging when limits are reached, prompting sign-up
 
 ## System Architecture
 
@@ -35,15 +44,19 @@ Preferred communication style: Simple, everyday language.
 - **Runtime**: Node.js with ES modules
 - **Framework**: Express.js for HTTP server
 - **AI Integration**: Ollama for local LLM inference
-- **Data Storage**: In-memory storage (MemStorage class) for pitch decks
+- **Data Storage**: PostgreSQL database with Drizzle ORM (fallback to MemStorage for development)
+- **Authentication**: Session-based auth with in-memory session store and database user management
+- **Usage Tracking**: Database storage for user limits and usage counts
 - **Development**: tsx for TypeScript execution in development
 
 ## Key Components
 
 ### Data Layer
 - **Schema Definition**: Shared TypeScript schemas using Drizzle ORM and Zod
-- **Database**: PostgreSQL with Drizzle ORM (configured but currently using memory storage)
+- **Database**: PostgreSQL with Drizzle ORM for production data persistence
 - **Storage Interface**: Abstract storage interface allowing swappable implementations
+- **User Management**: Users table with tier-based usage tracking (validationsUsed, pitchDecksUsed)
+- **Usage Tracking**: Client-side localStorage for anonymous users, database for authenticated users
 
 ### Frontend Components
 - **PitchDeckGenerator**: Main form component for creating pitch decks

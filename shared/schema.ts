@@ -6,6 +6,10 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  tier: text("tier").notNull().default("free"), // 'free', 'pro', 'enterprise'
+  validationsUsed: integer("validations_used").notNull().default(0),
+  pitchDecksUsed: integer("pitch_decks_used").notNull().default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 export const pitchDecks = pgTable("pitch_decks", {

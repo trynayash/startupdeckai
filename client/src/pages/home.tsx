@@ -1,12 +1,15 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { PitchDeckGenerator } from "@/components/pitch-deck-generator";
 import { PitchDeckDisplay } from "@/components/pitch-deck-display";
 import { SettingsModal } from "@/components/settings-modal";
+import { AuthModal } from "@/components/auth-modal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { checkOllamaStatus } from "@/lib/ollama";
 import { PitchDeckData, OllamaSettings } from "@shared/schema";
 import { 
@@ -20,12 +23,18 @@ import {
   ArrowRight,
   CheckCircle,
   Zap,
-  Shield
+  Shield,
+  LogOut,
+  User
 } from "lucide-react";
 
 export default function Home() {
   const [generatedDeck, setGeneratedDeck] = useState<PitchDeckData | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(
+    () => localStorage.getItem('auth-session')
+  );
   const [settings, setSettings] = useState<OllamaSettings>(() => {
     const saved = localStorage.getItem('ollama-settings');
     return saved ? JSON.parse(saved) : {
@@ -36,6 +45,15 @@ export default function Home() {
   });
 
   const { toast } = useToast();
+
+  // Check authentication status
+  const { data: user, isLoading: isAuthLoading } = useQuery({
+    queryKey: ['/api/auth/me'],
+    enabled: !!sessionId,
+    retry: false,
+  });
+
+  const isAuthenticated = !!user;
 
   const { data: ollamaStatus, refetch: refetchStatus } = useQuery({
     queryKey: ['/api/status'],
@@ -68,6 +86,31 @@ export default function Home() {
     });
   };
 
+  const signOutMutation = useMutation({
+    mutationFn: async () => {
+      await apiRequest('POST', '/api/auth/signout');
+    },
+    onSuccess: () => {
+      localStorage.removeItem('auth-session');
+      setSessionId(null);
+      toast({
+        title: "Signed out",
+        description: "You have been signed out successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Sign out failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAuthSuccess = () => {
+    window.location.reload();
+  };
+
   const isConnected = ollamaStatus?.status === 'connected';
 
   return (
@@ -87,6 +130,45 @@ export default function Home() {
             </div>
             
             <div className="flex items-center space-x-4">
+              <Link href="/analyze">
+                <Button
+                  variant="outline"
+                  className="border-2 border-[#145da0] text-[#145da0] hover:bg-[#145da0] hover:text-white transition-all duration-200"
+                >
+                  <BarChart3 className="mr-2 h-4 w-4" />
+                  Business Validation
+                </Button>
+              </Link>
+
+              {isAuthenticated && user ? (
+                <div className="flex items-center space-x-3">
+                  <div className="flex items-center space-x-2 bg-gradient-to-r from-[#145da0]/10 to-[#2e8bc0]/10 rounded-lg px-3 py-2">
+                    <User className="h-4 w-4 text-[#145da0]" />
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{user.username}</span>
+                    <Badge variant="secondary" className="bg-[#145da0] text-white text-xs">
+                      {user.tier.charAt(0).toUpperCase() + user.tier.slice(1)}
+                    </Badge>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => signOutMutation.mutate()}
+                    className="p-3 border-gray-300 hover:border-red-400 hover:bg-red-50 transition-colors"
+                    disabled={signOutMutation.isPending}
+                  >
+                    <LogOut className="h-4 w-4 text-gray-600 hover:text-red-600" />
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowAuthModal(true)}
+                  className="border-2 border-[#145da0] text-[#145da0] hover:bg-[#145da0] hover:text-white transition-all duration-200"
+                >
+                  <User className="mr-2 h-4 w-4" />
+                  Sign In
+                </Button>
+              )}
+
               <div className="flex items-center space-x-2 text-sm">
                 <div className={`w-2 h-2 rounded-full ${
                   isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'
@@ -304,6 +386,15 @@ export default function Home() {
         settings={settings}
         onSave={handleSettingsSaved}
         availableModels={ollamaStatus?.models || []}
+      />
+
+      {/* Authentication Modal */}
+      <AuthModal
+        open={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={handleAuthSuccess}
+        title="Join StartupDeck AI"
+        description="Sign up to unlock unlimited business validations and pitch deck generations"
       />
     </div>
   );

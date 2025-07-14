@@ -4,9 +4,126 @@ import { storage } from "./storage";
 import { generatePitchDeckSchema, validateBusinessIdeaSchema } from "@shared/schema";
 import { Ollama } from "ollama";
 
+// Simple session store for demo purposes
+const sessions = new Map<string, { userId: number; username: string }>();
+
+function generateSessionId(): string {
+  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   const ollama = new Ollama({
     host: process.env.OLLAMA_HOST || "http://localhost:11434",
+  });
+
+  // Authentication middleware
+  const requireAuth = (req: any, res: any, next: any) => {
+    const sessionId = req.headers.authorization?.replace('Bearer ', '');
+    if (!sessionId || !sessions.has(sessionId)) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    req.user = sessions.get(sessionId);
+    next();
+  };
+
+  // Auth routes
+  app.post('/api/auth/signup', async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ error: 'Username and password are required' });
+      }
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByUsername(username);
+      if (existingUser) {
+        return res.status(400).json({ error: 'Username already exists' });
+      }
+
+      // Create user (in production, hash the password!)
+      const user = await storage.createUser({ username, password });
+      
+      // Create session
+      const sessionId = generateSessionId();
+      sessions.set(sessionId, { userId: user.id, username: user.username });
+
+      res.json({ 
+        user: { 
+          id: user.id, 
+          username: user.username, 
+          tier: user.tier,
+          validationsUsed: user.validationsUsed,
+          pitchDecksUsed: user.pitchDecksUsed 
+        }, 
+        sessionId 
+      });
+    } catch (error) {
+      console.error('Signup error:', error);
+      res.status(500).json({ error: 'Failed to create account' });
+    }
+  });
+
+  app.post('/api/auth/signin', async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ error: 'Username and password are required' });
+      }
+
+      // Find user
+      const user = await storage.getUserByUsername(username);
+      if (!user || user.password !== password) {
+        return res.status(400).json({ error: 'Invalid credentials' });
+      }
+
+      // Create session
+      const sessionId = generateSessionId();
+      sessions.set(sessionId, { userId: user.id, username: user.username });
+
+      res.json({ 
+        user: { 
+          id: user.id, 
+          username: user.username, 
+          tier: user.tier,
+          validationsUsed: user.validationsUsed,
+          pitchDecksUsed: user.pitchDecksUsed 
+        }, 
+        sessionId 
+      });
+    } catch (error) {
+      console.error('Signin error:', error);
+      res.status(500).json({ error: 'Failed to sign in' });
+    }
+  });
+
+  app.post('/api/auth/signout', (req, res) => {
+    const sessionId = req.headers.authorization?.replace('Bearer ', '');
+    if (sessionId) {
+      sessions.delete(sessionId);
+    }
+    res.json({ success: true });
+  });
+
+  app.get('/api/auth/me', requireAuth, async (req: any, res) => {
+    try {
+      const user = await storage.getUserById(req.user.userId);
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      res.json({
+        id: user.id,
+        username: user.username,
+        tier: user.tier,
+        validationsUsed: user.validationsUsed,
+        pitchDecksUsed: user.pitchDecksUsed
+      });
+    } catch (error) {
+      console.error('Get user error:', error);
+      res.status(500).json({ error: 'Failed to get user' });
+    }
   });
 
   // Generate pitch deck endpoint

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -9,7 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { AuthModal } from "@/components/auth-modal";
 import { useToast } from "@/hooks/use-toast";
+import { useUsageTracker } from "@/lib/usageTracker";
 import { BusinessValidation } from "@shared/schema";
 import { 
   ArrowLeft, 
@@ -20,7 +23,9 @@ import {
   BarChart3,
   Target,
   Users,
-  TrendingUp
+  TrendingUp,
+  AlertTriangle,
+  Lock
 } from "lucide-react";
 
 const formSchema = z.object({
@@ -43,7 +48,22 @@ const surpriseIdeas = [
 
 export default function Analyze() {
   const [, setLocation] = useLocation();
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(
+    () => localStorage.getItem('auth-session')
+  );
   const { toast } = useToast();
+  
+  // Check authentication status
+  const { data: user, isLoading: isAuthLoading } = useQuery({
+    queryKey: ['/api/auth/me'],
+    enabled: !!sessionId,
+    retry: false,
+  });
+
+  const isAuthenticated = !!user;
+  const usageTracker = useUsageTracker(isAuthenticated, user?.tier || 'anonymous');
+  const usageStatus = usageTracker.getUsageStatus();
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -53,13 +73,34 @@ export default function Analyze() {
     },
   });
 
+  // Update auth header for API requests
+  useEffect(() => {
+    if (sessionId) {
+      // Store session for API requests
+      localStorage.setItem('auth-session', sessionId);
+    } else {
+      localStorage.removeItem('auth-session');
+    }
+  }, [sessionId]);
+
   const validateMutation = useMutation({
     mutationFn: async ({ idea, includesPitchDeck }: { idea: string; includesPitchDeck: boolean }) => {
+      // Check usage limits before making request
+      if (usageTracker.requiresAuthentication('validation')) {
+        throw new Error('Please sign in to continue validating business ideas');
+      }
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+
+      if (sessionId) {
+        headers.Authorization = `Bearer ${sessionId}`;
+      }
+
       const response = await fetch('/api/validate', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({ 
           idea, 
           model: 'llama3.2',
@@ -76,6 +117,12 @@ export default function Analyze() {
       return data;
     },
     onSuccess: (data) => {
+      // Record usage
+      usageTracker.recordUsage('validation');
+      if (form.watch('includesPitchDeck')) {
+        usageTracker.recordUsage('pitchDeck');
+      }
+
       // Store the validation result in localStorage
       localStorage.setItem('latest-validation', JSON.stringify(data.validation));
       
@@ -83,16 +130,31 @@ export default function Analyze() {
       setLocation('/result');
     },
     onError: (error: Error) => {
-      toast({
-        title: "Validation Failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      if (error.message.includes('sign in')) {
+        setShowAuthModal(true);
+      } else {
+        toast({
+          title: "Validation Failed",
+          description: error.message,
+          variant: "destructive",
+        });
+      }
     },
   });
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
+    // Check if user needs to authenticate
+    if (usageTracker.requiresAuthentication('validation')) {
+      setShowAuthModal(true);
+      return;
+    }
+
     validateMutation.mutate(values);
+  };
+
+  const handleAuthSuccess = () => {
+    // Refresh the page or refetch user data
+    window.location.reload();
   };
 
   const handleSurpriseMe = () => {
@@ -131,10 +193,43 @@ export default function Analyze() {
               Business Idea
             </span>
           </h2>
-          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-6">
             Get comprehensive AI-powered analysis including market sizing, competition research, 
             target audience insights, and a complete validation score.
           </p>
+
+          {/* Usage Status */}
+          {!isAuthenticated && (
+            <div className="bg-gradient-to-r from-[#b1d4e0]/20 to-[#2e8bc0]/20 rounded-lg p-4 max-w-md mx-auto">
+              <div className="flex items-center justify-center space-x-2">
+                <AlertTriangle className="h-4 w-4 text-[#145da0]" />
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  {usageStatus.validations >= usageStatus.maxValidations ? (
+                    <span className="text-red-600 font-medium">Trial limit reached - Sign in for more</span>
+                  ) : (
+                    <span>
+                      <span className="font-medium text-[#145da0]">{usageStatus.maxValidations - usageStatus.validations}</span> 
+                      {" free validation"}{usageStatus.maxValidations - usageStatus.validations !== 1 ? "s" : ""} remaining
+                    </span>
+                  )}
+                </span>
+              </div>
+            </div>
+          )}
+
+          {isAuthenticated && user && (
+            <div className="bg-gradient-to-r from-[#145da0]/10 to-[#2e8bc0]/10 rounded-lg p-4 max-w-md mx-auto">
+              <div className="flex items-center justify-center space-x-3">
+                <Badge variant="secondary" className="bg-[#145da0] text-white">
+                  {user.tier.charAt(0).toUpperCase() + user.tier.slice(1)} Plan
+                </Badge>
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  {user.validationsUsed}/
+                  {user.tier === 'free' ? '5' : user.tier === 'pro' ? '50' : '∞'} validations used
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Analysis Form */}
@@ -183,13 +278,18 @@ export default function Analyze() {
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button
                   type="submit"
-                  disabled={validateMutation.isPending}
-                  className="flex-1 bg-gradient-to-r from-[#145da0] to-[#2e8bc0] hover:from-[#0c2d48] hover:to-[#145da0] hover:shadow-lg transition-all duration-200 text-white"
+                  disabled={validateMutation.isPending || (!isAuthenticated && usageStatus.validations >= usageStatus.maxValidations)}
+                  className="flex-1 bg-gradient-to-r from-[#145da0] to-[#2e8bc0] hover:from-[#0c2d48] hover:to-[#145da0] hover:shadow-lg transition-all duration-200 text-white disabled:opacity-50"
                 >
                   {validateMutation.isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Analyzing...
+                    </>
+                  ) : !isAuthenticated && usageStatus.validations >= usageStatus.maxValidations ? (
+                    <>
+                      <Lock className="mr-2 h-4 w-4" />
+                      Sign In to Continue
                     </>
                   ) : (
                     <>
@@ -302,6 +402,15 @@ export default function Analyze() {
           </Card>
         </div>
       </main>
+
+      {/* Authentication Modal */}
+      <AuthModal
+        open={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onSuccess={handleAuthSuccess}
+        title="Continue Validating Ideas"
+        description="Sign in to unlock unlimited business validations and pitch deck generations"
+      />
     </div>
   );
 }
