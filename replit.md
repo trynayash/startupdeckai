@@ -17,6 +17,7 @@ Preferred communication style: Simple, everyday language.
 - **Professional UI Redesign**: Modern gradient design, improved typography, and responsive layout
 - **SWOT Analysis**: Automated strengths, weaknesses, opportunities, and threats evaluation
 - **Recommendation System**: AI-powered go/wait/pivot recommendations with confidence scoring
+- **Database Integration**: Replaced memory storage with PostgreSQL database for persistent data storage
 
 ## System Architecture
 
