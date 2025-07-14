@@ -73,16 +73,16 @@ export default function Home() {
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-50">
+      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 sticky top-0 z-50 dark:bg-slate-900/80 dark:border-gray-700/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-r from-primary to-secondary rounded-xl flex items-center justify-center">
+              <div className="w-10 h-10 bg-gradient-to-r from-[#145da0] to-[#2e8bc0] rounded-xl flex items-center justify-center shadow-lg">
                 <Rocket className="text-white text-lg" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">StartupDeck AI</h1>
-                <p className="text-xs text-gray-500">Self-Hosted • Privacy-First</p>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">StartupDeck AI</h1>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Self-Hosted • Privacy-First</p>
               </div>
             </div>
             
@@ -112,49 +112,49 @@ export default function Home() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hero Section */}
         <div className="text-center mb-16">
-          <div className="w-20 h-20 bg-gradient-to-r from-primary to-secondary rounded-3xl flex items-center justify-center mx-auto mb-8">
+          <div className="w-20 h-20 bg-gradient-to-r from-[#145da0] to-[#2e8bc0] rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-2xl">
             <Sparkles className="text-white text-3xl" />
           </div>
           
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
             Validate & Build{" "}
-            <span className="bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#145da0] via-[#2e8bc0] to-[#b1d4e0] bg-clip-text text-transparent">
               Winning Startups
             </span>
           </h1>
           
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto mb-8">
             AI-powered business validation, market analysis, and pitch deck generation. 
             Completely self-hosted with open-source LLMs - no API keys, no data sharing.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Link href="/analyze">
-              <Button size="lg" className="bg-gradient-to-r from-primary to-secondary hover:shadow-lg transition-all duration-200 text-lg px-8 py-3">
+              <Button size="lg" className="bg-gradient-to-r from-[#145da0] to-[#2e8bc0] hover:from-[#0c2d48] hover:to-[#145da0] hover:shadow-xl transition-all duration-200 text-lg px-8 py-3 text-white">
                 <BarChart3 className="mr-2 h-5 w-5" />
                 Validate Business Idea
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
             
-            <Button variant="outline" size="lg" className="border-2 hover:border-primary hover:text-primary transition-all duration-200 text-lg px-8 py-3">
+            <Button variant="outline" size="lg" className="border-2 border-[#145da0] text-[#145da0] hover:bg-[#145da0] hover:text-white transition-all duration-200 text-lg px-8 py-3">
               <Rocket className="mr-2 h-5 w-5" />
               Generate Pitch Deck
             </Button>
           </div>
 
           {/* Trust Indicators */}
-          <div className="flex flex-wrap justify-center items-center gap-6 text-sm text-gray-500">
+          <div className="flex flex-wrap justify-center items-center gap-6 text-sm text-gray-500 dark:text-gray-400">
             <div className="flex items-center space-x-2">
-              <Shield className="h-4 w-4 text-green-500" />
+              <Shield className="h-4 w-4 text-[#2e8bc0]" />
               <span>100% Private</span>
             </div>
             <div className="flex items-center space-x-2">
-              <Zap className="h-4 w-4 text-blue-500" />
+              <Zap className="h-4 w-4 text-[#145da0]" />
               <span>Open Source</span>
             </div>
             <div className="flex items-center space-x-2">
-              <CheckCircle className="h-4 w-4 text-purple-500" />
+              <CheckCircle className="h-4 w-4 text-[#b1d4e0]" />
               <span>No API Keys</span>
             </div>
           </div>
@@ -162,49 +162,49 @@ export default function Home() {
 
         {/* Features Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-          <Card className="bg-white/50 backdrop-blur-sm border-gray-200/50 hover:shadow-lg transition-shadow">
+          <Card className="bg-white/50 backdrop-blur-sm border-gray-200/50 hover:shadow-lg transition-shadow dark:bg-slate-800/50 dark:border-gray-700/50">
             <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <BarChart3 className="text-blue-600 h-6 w-6" />
+              <div className="w-12 h-12 bg-[#b1d4e0]/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <BarChart3 className="text-[#145da0] h-6 w-6" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Validation Score</h3>
-              <p className="text-sm text-gray-600">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Validation Score</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
                 Get 0-100 viability scores based on comprehensive market analysis
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-white/50 backdrop-blur-sm border-gray-200/50 hover:shadow-lg transition-shadow">
+          <Card className="bg-white/50 backdrop-blur-sm border-gray-200/50 hover:shadow-lg transition-shadow dark:bg-slate-800/50 dark:border-gray-700/50">
             <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <Target className="text-green-600 h-6 w-6" />
+              <div className="w-12 h-12 bg-[#2e8bc0]/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <Target className="text-[#2e8bc0] h-6 w-6" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Market Analysis</h3>
-              <p className="text-sm text-gray-600">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Market Analysis</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
                 TAM/SAM/SOM calculations and competitive landscape insights
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-white/50 backdrop-blur-sm border-gray-200/50 hover:shadow-lg transition-shadow">
+          <Card className="bg-white/50 backdrop-blur-sm border-gray-200/50 hover:shadow-lg transition-shadow dark:bg-slate-800/50 dark:border-gray-700/50">
             <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <Users className="text-purple-600 h-6 w-6" />
+              <div className="w-12 h-12 bg-[#145da0]/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <Users className="text-[#0c2d48] h-6 w-6" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Audience Research</h3>
-              <p className="text-sm text-gray-600">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Audience Research</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
                 Detailed customer personas and market segmentation analysis
               </p>
             </CardContent>
           </Card>
 
-          <Card className="bg-white/50 backdrop-blur-sm border-gray-200/50 hover:shadow-lg transition-shadow">
+          <Card className="bg-white/50 backdrop-blur-sm border-gray-200/50 hover:shadow-lg transition-shadow dark:bg-slate-800/50 dark:border-gray-700/50">
             <CardContent className="p-6 text-center">
-              <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <TrendingUp className="text-amber-600 h-6 w-6" />
+              <div className="w-12 h-12 bg-[#b1d4e0]/20 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <TrendingUp className="text-[#2e8bc0] h-6 w-6" />
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">Pitch Decks</h3>
-              <p className="text-sm text-gray-600">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Pitch Decks</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-300">
                 Professional investor-ready presentations with export options
               </p>
             </CardContent>

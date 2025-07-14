@@ -18,6 +18,7 @@ Preferred communication style: Simple, everyday language.
 - **SWOT Analysis**: Automated strengths, weaknesses, opportunities, and threats evaluation
 - **Recommendation System**: AI-powered go/wait/pivot recommendations with confidence scoring
 - **Database Integration**: Replaced memory storage with PostgreSQL database for persistent data storage
+- **Midnight Blue Color Palette**: Applied cohesive midnight blue theme (#145da0, #0c2d48, #2e8bc0, #b1d4e0) across entire application
 
 ## System Architecture
 

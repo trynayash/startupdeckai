@@ -101,19 +101,19 @@ export default function Analyze() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-sky-50 to-indigo-50 dark:from-slate-900 dark:via-blue-900 dark:to-indigo-900">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/50">
+      <header className="bg-white/80 backdrop-blur-md border-b border-gray-200/50 dark:bg-slate-900/80 dark:border-gray-700/50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center h-16 space-x-4">
             <Link href="/">
-              <Button variant="ghost" size="sm" className="p-2">
+              <Button variant="ghost" size="sm" className="p-2 text-[#145da0] hover:bg-[#b1d4e0]/20">
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             </Link>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Business Idea Validation</h1>
-              <p className="text-sm text-gray-500">Get AI-powered insights and analysis</p>
+              <h1 className="text-xl font-bold text-gray-900 dark:text-white">Business Idea Validation</h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Get AI-powered insights and analysis</p>
             </div>
           </div>
         </div>
@@ -122,23 +122,23 @@ export default function Analyze() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Hero Section */}
         <div className="text-center mb-12">
-          <div className="w-16 h-16 bg-gradient-to-r from-primary to-secondary rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <div className="w-16 h-16 bg-gradient-to-r from-[#145da0] to-[#2e8bc0] rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
             <BarChart3 className="text-white text-2xl" />
           </div>
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
+          <h2 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
             Validate Your{" "}
-            <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-[#145da0] to-[#2e8bc0] bg-clip-text text-transparent">
               Business Idea
             </span>
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
             Get comprehensive AI-powered analysis including market sizing, competition research, 
             target audience insights, and a complete validation score.
           </p>
         </div>
 
         {/* Analysis Form */}
-        <Card className="bg-white/70 backdrop-blur-sm shadow-lg border-gray-200/50 mb-8">
+        <Card className="bg-white/70 backdrop-blur-sm shadow-lg border-gray-200/50 mb-8 dark:bg-slate-800/70 dark:border-gray-700/50">
           <CardContent className="p-8">
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div>
@@ -166,10 +166,10 @@ export default function Analyze() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <Label htmlFor="includesPitchDeck" className="text-sm font-medium text-gray-700">
+                  <Label htmlFor="includesPitchDeck" className="text-sm font-medium text-gray-700 dark:text-gray-300">
                     Generate pitch deck
                   </Label>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                     Also create a professional pitch deck with your validation
                   </p>
                 </div>
@@ -184,7 +184,7 @@ export default function Analyze() {
                 <Button
                   type="submit"
                   disabled={validateMutation.isPending}
-                  className="flex-1 bg-gradient-to-r from-primary to-secondary hover:shadow-lg transition-all duration-200"
+                  className="flex-1 bg-gradient-to-r from-[#145da0] to-[#2e8bc0] hover:from-[#0c2d48] hover:to-[#145da0] hover:shadow-lg transition-all duration-200 text-white"
                 >
                   {validateMutation.isPending ? (
                     <>
@@ -203,7 +203,7 @@ export default function Analyze() {
                   type="button"
                   variant="outline"
                   onClick={handleSurpriseMe}
-                  className="sm:w-auto border-2 hover:border-primary hover:text-primary transition-all duration-200"
+                  className="sm:w-auto border-2 border-[#145da0] text-[#145da0] hover:bg-[#145da0] hover:text-white transition-all duration-200"
                 >
                   <Dice1 className="mr-2 h-4 w-4" />
                   Surprise Me
