@@ -1,0 +1,173 @@
+import type { Express } from "express";
+import { createServer, type Server } from "http";
+import { storage } from "./storage";
+import { generatePitchDeckSchema } from "@shared/schema";
+import { Ollama } from "ollama";
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  const ollama = new Ollama({
+    host: process.env.OLLAMA_HOST || "http://localhost:11434",
+  });
+
+  // Generate pitch deck endpoint
+  app.post("/api/generate", async (req, res) => {
+    try {
+      const { prompt, model } = generatePitchDeckSchema.parse(req.body);
+      
+      // Check if Ollama is available
+      try {
+        await ollama.list();
+      } catch (error) {
+        return res.status(503).json({
+          error: "Ollama service is not available. Please ensure Ollama is running on your system.",
+          details: "Visit https://ollama.com for installation instructions."
+        });
+      }
+
+      const systemPrompt = `You are an expert startup consultant and pitch deck generator. Given a problem or keyword, generate a comprehensive startup pitch deck with the following structure. Return ONLY a valid JSON object with these exact fields:
+
+{
+  "startupName": "Creative, memorable startup name",
+  "problem": "Clear problem statement (2-3 sentences)",
+  "solution": "Compelling solution description (2-3 sentences)",
+  "marketSize": {
+    "tam": "Total Addressable Market (e.g., $240B)",
+    "sam": "Serviceable Addressable Market (e.g., $45B)",
+    "som": "Serviceable Obtainable Market (e.g., $2.8B)",
+    "description": "Brief market context (1-2 sentences)"
+  },
+  "businessModel": [
+    {
+      "name": "Revenue Stream 1",
+      "description": "Description of revenue stream",
+      "revenue": "Expected revenue range"
+    },
+    {
+      "name": "Revenue Stream 2", 
+      "description": "Description of revenue stream",
+      "revenue": "Expected revenue range"
+    }
+  ],
+  "techStack": [
+    {"name": "Technology 1", "category": "Frontend/Backend/Database/AI/etc"},
+    {"name": "Technology 2", "category": "Frontend/Backend/Database/AI/etc"}
+  ],
+  "team": [
+    {
+      "role": "CEO/CTO/VP Product/etc",
+      "description": "Background and expertise",
+      "initials": "AA"
+    }
+  ],
+  "summary": "Executive summary (3-4 sentences covering problem, solution, market opportunity, and ask)"
+}
+
+Make the startup realistic, innovative, and investible. Base all content on the provided prompt but be creative and specific.`;
+
+      const response = await ollama.chat({
+        model: model,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: `Generate a startup pitch deck for: ${prompt}` }
+        ],
+        stream: false,
+      });
+
+      let content = response.message.content.trim();
+      
+      // Extract JSON from response if it contains extra text
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        content = jsonMatch[0];
+      }
+
+      let pitchDeckData;
+      try {
+        pitchDeckData = JSON.parse(content);
+      } catch (parseError) {
+        console.error("Failed to parse LLM response:", content);
+        return res.status(500).json({
+          error: "Failed to parse AI response. Please try again.",
+          details: "The AI response was not in the expected format."
+        });
+      }
+
+      // Validate required fields
+      const requiredFields = ['startupName', 'problem', 'solution', 'marketSize', 'businessModel', 'techStack', 'team', 'summary'];
+      for (const field of requiredFields) {
+        if (!pitchDeckData[field]) {
+          return res.status(500).json({
+            error: `AI response missing required field: ${field}`,
+            details: "Please try regenerating the pitch deck."
+          });
+        }
+      }
+
+      // Store the generated pitch deck
+      const savedDeck = await storage.createPitchDeck({
+        ...pitchDeckData,
+        originalPrompt: prompt,
+      });
+
+      res.json({
+        success: true,
+        pitchDeck: {
+          id: savedDeck.id.toString(),
+          ...pitchDeckData,
+          originalPrompt: prompt,
+          generatedAt: savedDeck.createdAt.toISOString(),
+        }
+      });
+
+    } catch (error) {
+      console.error("Error generating pitch deck:", error);
+      res.status(500).json({
+        error: "Failed to generate pitch deck",
+        details: error instanceof Error ? error.message : "Unknown error occurred"
+      });
+    }
+  });
+
+  // Check Ollama status
+  app.get("/api/status", async (req, res) => {
+    try {
+      const models = await ollama.list();
+      res.json({
+        status: "connected",
+        models: models.models.map(m => ({
+          name: m.name,
+          size: m.size
+        }))
+      });
+    } catch (error) {
+      res.status(503).json({
+        status: "disconnected",
+        error: "Ollama service is not available"
+      });
+    }
+  });
+
+  // Get all saved pitch decks
+  app.get("/api/decks", async (req, res) => {
+    try {
+      const decks = await storage.getAllPitchDecks();
+      res.json(decks);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch pitch decks" });
+    }
+  });
+
+  // Delete a pitch deck
+  app.delete("/api/decks/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deletePitchDeck(id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete pitch deck" });
+    }
+  });
+
+  const httpServer = createServer(app);
+  return httpServer;
+}
