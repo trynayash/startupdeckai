@@ -1,12 +1,22 @@
-# Pitch Deck Generator - System Architecture
+# StartupDeck AI - Business Validation & Pitch Generation Platform
 
 ## Overview
 
-This is a full-stack web application that generates AI-powered pitch decks using local Ollama models. The application consists of a React frontend with shadcn/ui components and an Express.js backend that interfaces with Ollama for AI generation. The system is designed to work entirely locally without requiring external API keys or cloud services.
+This is a comprehensive full-stack web application that provides AI-powered business idea validation, market analysis, and pitch deck generation using self-hosted open-source LLMs. The platform offers StartupDeck-like functionality with enhanced business validation features, professional UI design, and complete privacy through local Ollama models.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+
+## Recent Changes (January 2025)
+
+### Major Feature Enhancements
+- **Business Validation Engine**: Added comprehensive business idea analysis with scoring system (0-100)
+- **Multi-Page Architecture**: Implemented `/analyze` and `/result` pages for enhanced user flow
+- **Advanced Analytics**: TAM/SAM/SOM calculations, target audience analysis, competition research
+- **Professional UI Redesign**: Modern gradient design, improved typography, and responsive layout
+- **SWOT Analysis**: Automated strengths, weaknesses, opportunities, and threats evaluation
+- **Recommendation System**: AI-powered go/wait/pivot recommendations with confidence scoring
 
 ## System Architecture
 

@@ -37,6 +37,12 @@ export const generatePitchDeckSchema = z.object({
   model: z.string().optional().default("llama3.2"),
 });
 
+export const validateBusinessIdeaSchema = z.object({
+  idea: z.string().min(1, "Business idea is required"),
+  model: z.string().optional().default("llama3.2"),
+  includesPitchDeck: z.boolean().optional().default(false),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type InsertPitchDeck = z.infer<typeof insertPitchDeckSchema>;
@@ -72,6 +78,61 @@ export interface PitchDeckData {
   summary: string;
   originalPrompt: string;
   generatedAt: string;
+}
+
+// Business validation and analysis types
+export interface BusinessValidation {
+  id: string;
+  originalIdea: string;
+  validationScore: number; // 0-100
+  confidence: number; // 0-100
+  stage: 'idea' | 'mvp' | 'growth';
+  recommendation: 'go' | 'wait' | 'pivot';
+  analysis: {
+    problemSolutionFit: {
+      score: number;
+      insights: string[];
+      concerns: string[];
+    };
+    marketSize: {
+      tam: string;
+      sam: string;
+      som: string;
+      score: number;
+      description: string;
+    };
+    targetAudience: {
+      primary: string;
+      secondary: string;
+      demographics: string;
+      psychographics: string;
+      score: number;
+    };
+    competitors: Array<{
+      name: string;
+      type: 'direct' | 'indirect';
+      strengths: string[];
+      weaknesses: string[];
+    }>;
+    businessModel: {
+      primaryRevenue: string;
+      secondaryRevenue: string[];
+      scalability: number;
+      feasibility: number;
+    };
+    techStack: Array<{
+      name: string;
+      category: string;
+      complexity: 'low' | 'medium' | 'high';
+      cost: 'low' | 'medium' | 'high';
+    }>;
+    strengths: string[];
+    weaknesses: string[];
+    risks: string[];
+    opportunities: string[];
+  };
+  pitchDeck?: PitchDeckData;
+  createdAt: string;
 }
 
 export interface OllamaSettings {
