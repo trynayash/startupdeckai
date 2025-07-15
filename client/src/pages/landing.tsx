@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -24,15 +24,38 @@ import {
   Lock
 } from "lucide-react";
 import { Github } from "lucide-react";
-} from "lucide-react";
+
+// Modern SaaS-style loading screen
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-[#145da0] via-[#2e8bc0] to-[#b1d4e0] animate-fade-in">
+      <div className="flex flex-col items-center">
+        <div className="w-20 h-20 mb-8 flex items-center justify-center bg-white/20 rounded-full shadow-lg animate-spin-slow">
+          <Rocket className="w-12 h-12 text-[#145da0] animate-bounce" />
+        </div>
+        <h1 className="text-3xl font-bold text-white mb-2 tracking-wide drop-shadow-lg">StartupDeckAI</h1>
+        <p className="text-lg text-white/80 mb-4">Validating your next big idea...</p>
+        <div className="w-32 h-2 bg-gradient-to-r from-[#145da0] to-[#2e8bc0] rounded-full animate-pulse" />
+      </div>
+    </div>
+  );
+}
 
 export default function Landing() {
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1800); // 1.8s loading
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleAuthSuccess = () => {
     // Redirect to home page after successful authentication
     window.location.href = '/';
   };
+
+  if (loading) return <LoadingScreen />;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-blue-900 dark:to-indigo-900">
