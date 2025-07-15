@@ -2,7 +2,6 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { generatePitchDeckSchema, validateBusinessIdeaSchema } from "@shared/schema";
-import { Ollama } from "ollama";
 
 // Simple session store for demo purposes
 const sessions = new Map<string, { userId: number; username: string }>();
@@ -11,11 +10,25 @@ function generateSessionId(): string {
   return Math.random().toString(36).substring(2) + Date.now().toString(36);
 }
 
-export async function registerRoutes(app: Express): Promise<Server> {
-  const ollama = new Ollama({
-    host: process.env.OLLAMA_HOST || "http://localhost:11434",
+async function callOpenRouter(messages: any[], model: string) {
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) throw new Error('OPENROUTER_API_KEY not set');
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model,
+      messages
+    })
   });
+  if (!response.ok) throw new Error('OpenRouter API error');
+  return response.json();
+}
 
+export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication middleware
   const requireAuth = (req: any, res: any, next: any) => {
     const sessionId = req.headers.authorization?.replace('Bearer ', '');
@@ -143,17 +156,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/generate", async (req, res) => {
     try {
       const { prompt, model } = generatePitchDeckSchema.parse(req.body);
-      
-      // Check if Ollama is available
-      try {
-        await ollama.list();
-      } catch (error) {
-        return res.status(503).json({
-          error: "Ollama service is not available. Please ensure Ollama is running on your system.",
-          details: "Visit https://ollama.com for installation instructions."
-        });
-      }
-
       const systemPrompt = `You are an expert startup consultant and pitch deck generator. Given a problem or keyword, generate a comprehensive startup pitch deck with the following structure. Return ONLY a valid JSON object with these exact fields:
 
 {
@@ -193,24 +195,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 }
 
 Make the startup realistic, innovative, and investible. Base all content on the provided prompt but be creative and specific.`;
-
-      const response = await ollama.chat({
-        model: model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: `Generate a startup pitch deck for: ${prompt}` }
-        ],
-        stream: false,
-      });
-
-      let content = response.message.content.trim();
-      
-      // Extract JSON from response if it contains extra text
+      const messages = [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: `Generate a startup pitch deck for: ${prompt}` }
+      ];
+      const openrouterModel = model || process.env.OPENROUTER_MODEL || "deepseek-chat";
+      const response = await callOpenRouter(messages, openrouterModel);
+      let content = response.choices?.[0]?.message?.content?.trim() || "";
       const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        content = jsonMatch[0];
-      }
-
+      if (jsonMatch) content = jsonMatch[0];
       let pitchDeckData;
       try {
         pitchDeckData = JSON.parse(content);
@@ -221,7 +214,6 @@ Make the startup realistic, innovative, and investible. Base all content on the 
           details: "The AI response was not in the expected format."
         });
       }
-
       // Validate required fields
       const requiredFields = ['startupName', 'problem', 'solution', 'marketSize', 'businessModel', 'techStack', 'team', 'summary'];
       for (const field of requiredFields) {
@@ -232,13 +224,11 @@ Make the startup realistic, innovative, and investible. Base all content on the 
           });
         }
       }
-
       // Store the generated pitch deck
       const savedDeck = await storage.createPitchDeck({
         ...pitchDeckData,
         originalPrompt: prompt,
       });
-
       res.json({
         success: true,
         pitchDeck: {
@@ -248,7 +238,6 @@ Make the startup realistic, innovative, and investible. Base all content on the 
           generatedAt: savedDeck.createdAt.toISOString(),
         }
       });
-
     } catch (error) {
       console.error("Error generating pitch deck:", error);
       res.status(500).json({
@@ -258,61 +247,10 @@ Make the startup realistic, innovative, and investible. Base all content on the 
     }
   });
 
-  // Check Ollama status
-  app.get("/api/status", async (req, res) => {
-    try {
-      const models = await ollama.list();
-      res.json({
-        status: "connected",
-        models: models.models.map(m => ({
-          name: m.name,
-          size: m.size
-        }))
-      });
-    } catch (error) {
-      res.status(503).json({
-        status: "disconnected",
-        error: "Ollama service is not available"
-      });
-    }
-  });
-
-  // Get all saved pitch decks
-  app.get("/api/decks", async (req, res) => {
-    try {
-      const decks = await storage.getAllPitchDecks();
-      res.json(decks);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch pitch decks" });
-    }
-  });
-
-  // Delete a pitch deck
-  app.delete("/api/decks/:id", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      await storage.deletePitchDeck(id);
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ error: "Failed to delete pitch deck" });
-    }
-  });
-
   // Business idea validation endpoint
   app.post("/api/validate", async (req, res) => {
     try {
       const { idea, model, includesPitchDeck } = validateBusinessIdeaSchema.parse(req.body);
-      
-      // Check if Ollama is available
-      try {
-        await ollama.list();
-      } catch (error) {
-        return res.status(503).json({
-          error: "Ollama service is not available. Please ensure Ollama is running on your system.",
-          details: "Visit https://ollama.com for installation instructions."
-        });
-      }
-
       const validationPrompt = `You are an expert business analyst and startup consultant. Analyze the following business idea comprehensively and return ONLY a valid JSON object with detailed validation data.
 
 Business Idea: "${idea}"
@@ -385,23 +323,14 @@ Rules:
 - Make insights specific and actionable
 - Consider real market conditions and competition
 - Be honest about weaknesses and risks`;
-
-      const response = await ollama.chat({
-        model: model,
-        messages: [
-          { role: "user", content: validationPrompt }
-        ],
-        stream: false,
-      });
-
-      let content = response.message.content.trim();
-      
-      // Extract JSON from response if it contains extra text
+      const messages = [
+        { role: "user", content: validationPrompt }
+      ];
+      const openrouterModel = model || process.env.OPENROUTER_MODEL || "deepseek-chat";
+      const response = await callOpenRouter(messages, openrouterModel);
+      let content = response.choices?.[0]?.message?.content?.trim() || "";
       const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        content = jsonMatch[0];
-      }
-
+      if (jsonMatch) content = jsonMatch[0];
       let validationData;
       try {
         validationData = JSON.parse(content);
@@ -412,15 +341,12 @@ Rules:
           details: "The AI response was not in the expected format."
         });
       }
-
-      // Create the business validation object
       const businessValidation = {
         id: Date.now().toString(),
         originalIdea: idea,
         ...validationData,
         createdAt: new Date().toISOString(),
       };
-
       // If pitch deck is requested, generate it too
       if (includesPitchDeck) {
         const pitchDeckPrompt = `Based on this validated business idea, create a professional pitch deck. Return ONLY valid JSON:
@@ -453,20 +379,14 @@ Market: ${validationData.analysis.marketSize.description}
   ],
   "summary": "Executive summary covering problem, solution, market, and ask"
 }`;
-
-        const pitchResponse = await ollama.chat({
-          model: model,
-          messages: [{ role: "user", content: pitchDeckPrompt }],
-          stream: false,
-        });
-
-        let pitchContent = pitchResponse.message.content.trim();
-        const pitchJsonMatch = pitchContent.match(/\{[\s\S]*\}/);
-        if (pitchJsonMatch) {
-          pitchContent = pitchJsonMatch[0];
-        }
-
+        const pitchMessages = [
+          { role: "user", content: pitchDeckPrompt }
+        ];
         try {
+          const pitchResponse = await callOpenRouter(pitchMessages, openrouterModel);
+          let pitchContent = pitchResponse.choices?.[0]?.message?.content?.trim() || "";
+          const pitchJsonMatch = pitchContent.match(/\{[\s\S]*\}/);
+          if (pitchJsonMatch) pitchContent = pitchJsonMatch[0];
           const pitchDeckData = JSON.parse(pitchContent);
           businessValidation.pitchDeck = {
             id: Date.now().toString(),
@@ -475,22 +395,40 @@ Market: ${validationData.analysis.marketSize.description}
             generatedAt: new Date().toISOString(),
           };
         } catch (pitchError) {
-          console.error("Failed to parse pitch deck response:", pitchContent);
-          // Continue without pitch deck if it fails
+          console.error("Failed to parse pitch deck response:", pitchError);
         }
       }
-
       res.json({
         success: true,
         validation: businessValidation
       });
-
     } catch (error) {
       console.error("Error validating business idea:", error);
       res.status(500).json({
         error: "Failed to validate business idea",
         details: error instanceof Error ? error.message : "Unknown error occurred"
       });
+    }
+  });
+
+  // Get all saved pitch decks
+  app.get("/api/decks", async (req, res) => {
+    try {
+      const decks = await storage.getAllPitchDecks();
+      res.json(decks);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch pitch decks" });
+    }
+  });
+
+  // Delete a pitch deck
+  app.delete("/api/decks/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      await storage.deletePitchDeck(id);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete pitch deck" });
     }
   });
 

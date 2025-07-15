@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "server/index.ts",
+      "use": "@vercel/node",
+      "config": { "includeFiles": ["dist/public/**", "shared/**", "client/**"] }
+    },
+    {
+      "src": "client/index.html",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/server/index.ts" },
+    { "src": "/(.*)", "dest": "/client/index.html" }
+  ],
+  "env": {
+    "NODE_ENV": "production",
+    "DATABASE_URL": "<your_database_url>",
+    "OLLAMA_HOST": "<your_ollama_host>"
+  }
+} 
