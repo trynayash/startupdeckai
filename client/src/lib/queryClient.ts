@@ -19,8 +19,8 @@ export async function apiRequest(
   if (sessionId) {
     headers.Authorization = `Bearer ${sessionId}`;
   }
-
-  const res = await fetch(url, {
+  const apiBase = import.meta.env.VITE_API_URL;
+  const res = await fetch(`${apiBase}${url}`, {
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
